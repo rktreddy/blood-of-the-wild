@@ -1,0 +1,1740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blood of the Wild</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: #0d1a2a;
+    color: #f0e8d0;
+    font-family: 'Cormorant Garamond', serif;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  #game-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(ellipse at top, #4a7ba8 0%, #1a3a5a 40%, #0a1525 100%);
+  }
+
+  canvas {
+    border: 4px solid #d4af37;
+    border-radius: 4px;
+    box-shadow:
+      0 0 60px rgba(212, 175, 55, 0.35),
+      0 0 120px rgba(80, 150, 220, 0.2),
+      inset 0 0 2px rgba(255, 255, 255, 0.1);
+    image-rendering: pixelated;
+    max-width: 100%;
+    max-height: 100%;
+    background: #88c070;
+  }
+
+  #title-screen, #game-over-screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(ellipse at top, rgba(100, 160, 210, 0.95) 0%, rgba(40, 80, 130, 0.97) 50%, rgba(15, 30, 55, 0.99) 100%);
+    z-index: 10;
+    text-align: center;
+    padding: 20px;
+  }
+
+  #game-over-screen { display: none; }
+
+  .title {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: clamp(2.2rem, 7vw, 5.5rem);
+    letter-spacing: 0.12em;
+    color: #f5d76e;
+    background: linear-gradient(180deg, #fff4c0 0%, #d4af37 50%, #8a6820 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 0 #4a3510) drop-shadow(0 0 20px rgba(255, 220, 100, 0.5));
+    margin-bottom: 0.2em;
+    line-height: 1;
+  }
+
+  .subtitle {
+    font-family: 'Cinzel', serif;
+    font-weight: 500;
+    font-size: clamp(0.9rem, 2vw, 1.3rem);
+    letter-spacing: 0.5em;
+    color: #e8d070;
+    text-transform: uppercase;
+    margin-bottom: 2em;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  }
+
+  .flourish {
+    color: #d4af37;
+    font-size: 1.5rem;
+    margin: 1em 0;
+    letter-spacing: 0.5em;
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
+  }
+
+  .tagline {
+    font-style: italic;
+    font-size: clamp(1rem, 1.8vw, 1.25rem);
+    color: #f0e8d0;
+    max-width: 560px;
+    margin-bottom: 2em;
+    line-height: 1.6;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 0.5em 1.5em;
+    font-size: 1rem;
+    margin-bottom: 2em;
+    color: #f0e8d0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  }
+
+  .controls .key {
+    font-family: 'Cinzel', serif;
+    color: #f5d76e;
+    font-weight: 700;
+    text-align: right;
+  }
+
+  .btn {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    font-size: 1.1rem;
+    padding: 0.9em 2.8em;
+    background: linear-gradient(180deg, #f5d76e 0%, #d4af37 50%, #8a6820 100%);
+    color: #2a1e08;
+    border: 2px solid #8a6820;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    box-shadow:
+      0 4px 0 #6a4810,
+      0 0 20px rgba(245, 215, 110, 0.4);
+  }
+
+  .btn:hover {
+    background: linear-gradient(180deg, #fff0a0 0%, #f0c850 50%, #a88028 100%);
+    transform: translateY(-2px);
+    box-shadow:
+      0 6px 0 #6a4810,
+      0 0 30px rgba(255, 230, 130, 0.7);
+  }
+
+  #hud {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 5;
+    font-family: 'Cinzel', serif;
+    color: #f5d76e;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 2px #000;
+    pointer-events: none;
+  }
+
+  .hearts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    margin-bottom: 8px;
+    max-width: 340px;
+  }
+
+  .heart {
+    width: 14px;
+    height: 14px;
+    background: radial-gradient(circle at 35% 30%, #ff8080, #d02020 60%, #6b0000);
+    clip-path: polygon(50% 100%, 0 35%, 0 15%, 20% 0, 35% 0, 50% 15%, 65% 0, 80% 0, 100% 15%, 100% 35%);
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.7));
+  }
+
+  .heart.empty { background: #302020; opacity: 0.6; }
+
+  .stamina-bar {
+    width: 160px;
+    height: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid #d4af37;
+    border-radius: 5px;
+    margin-bottom: 8px;
+    overflow: hidden;
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+  }
+
+  .stamina-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #50d850, #a0ff60);
+    box-shadow: inset 0 -2px 4px rgba(0,0,0,0.3);
+    transition: width 0.15s;
+  }
+
+  .stats {
+    font-size: 0.95rem;
+    letter-spacing: 0.1em;
+  }
+  .stats div { margin-bottom: 4px; }
+
+  #message {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Cinzel', serif;
+    font-size: 1.05rem;
+    color: #2a1e08;
+    background: linear-gradient(180deg, #f5e4a0 0%, #e0c060 100%);
+    padding: 12px 32px;
+    border: 2px solid #8a6820;
+    border-radius: 8px;
+    box-shadow: 0 4px 0 #6a4810, 0 0 20px rgba(212, 175, 55, 0.4);
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+    z-index: 5;
+    text-align: center;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+  #message.show { opacity: 1; }
+
+  .rune-border {
+    position: absolute;
+    font-family: 'Cinzel', serif;
+    color: #d4af37;
+    font-size: 0.7rem;
+    letter-spacing: 0.5em;
+    opacity: 0.8;
+    text-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+  }
+  .rune-top { top: 30px; }
+  .rune-bottom { bottom: 30px; }
+
+  @media (max-width: 600px) {
+    .controls { font-size: 0.85rem; }
+    #hud { top: 10px; left: 10px; }
+    .heart { width: 20px; height: 20px; }
+    .stamina-bar { width: 120px; }
+  }
+
+  /* Touch controls */
+  #touch-controls {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 6;
+    display: none;
+  }
+  #touch-controls.active { display: block; }
+
+  #dpad {
+    position: absolute;
+    bottom: 30px;
+    left: 30px;
+    width: 150px;
+    height: 150px;
+    pointer-events: auto;
+  }
+
+  .dpad-btn {
+    position: absolute;
+    background: linear-gradient(180deg, #3a3a3a 0%, #1a1a1a 100%);
+    border: 2px solid #555;
+    color: #e0e0e0;
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    border-radius: 6px;
+    box-shadow: 0 3px 0 #000, inset 0 1px 2px rgba(255,255,255,0.2);
+  }
+  .dpad-btn.active {
+    background: linear-gradient(180deg, #555 0%, #2a2a2a 100%);
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #000;
+  }
+
+  .dpad-up    { top: 0;    left: 50px; width: 50px; height: 50px; }
+  .dpad-down  { bottom: 0; left: 50px; width: 50px; height: 50px; }
+  .dpad-left  { top: 50px; left: 0;    width: 50px; height: 50px; }
+  .dpad-right { top: 50px; right: 0;   width: 50px; height: 50px; }
+
+  #action-buttons {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: auto;
+    align-items: center;
+  }
+
+  .action-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 28%, #ffa0a0 0%, #e02020 35%, #8a0808 100%);
+    border: 3px solid #1a1a1a;
+    color: #fff;
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    text-shadow: 0 2px 3px rgba(0,0,0,0.8);
+    box-shadow:
+      0 5px 0 #1a1a1a,
+      0 0 15px rgba(224, 32, 32, 0.5),
+      inset 0 2px 4px rgba(255,255,255,0.3),
+      inset 0 -4px 6px rgba(0,0,0,0.3);
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    cursor: pointer;
+  }
+
+  .action-btn.active {
+    transform: translateY(4px);
+    box-shadow:
+      0 1px 0 #1a1a1a,
+      0 0 20px rgba(255, 80, 80, 0.8),
+      inset 0 2px 4px rgba(255,255,255,0.2),
+      inset 0 -2px 4px rgba(0,0,0,0.4);
+  }
+
+  .action-btn.small {
+    width: 58px;
+    height: 58px;
+    font-size: 0.7rem;
+  }
+
+  .action-btn.dash {
+    background: radial-gradient(circle at 32% 28%, #a0d0ff 0%, #2080d0 35%, #0a4080 100%);
+    box-shadow:
+      0 5px 0 #1a1a1a,
+      0 0 15px rgba(32, 128, 208, 0.5),
+      inset 0 2px 4px rgba(255,255,255,0.3),
+      inset 0 -4px 6px rgba(0,0,0,0.3);
+  }
+  .action-btn.dash.active {
+    box-shadow:
+      0 1px 0 #1a1a1a,
+      0 0 20px rgba(80, 160, 255, 0.8),
+      inset 0 2px 4px rgba(255,255,255,0.2),
+      inset 0 -2px 4px rgba(0,0,0,0.4);
+  }
+
+  .action-btn.heal {
+    background: radial-gradient(circle at 32% 28%, #fff4a0 0%, #f0c020 35%, #8a6010 100%);
+    box-shadow:
+      0 5px 0 #1a1a1a,
+      0 0 15px rgba(240, 192, 32, 0.5),
+      inset 0 2px 4px rgba(255,255,255,0.4),
+      inset 0 -4px 6px rgba(0,0,0,0.3);
+    color: #2a1e08;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.3);
+  }
+  .action-btn.heal.active {
+    box-shadow:
+      0 1px 0 #1a1a1a,
+      0 0 20px rgba(255, 220, 80, 0.8),
+      inset 0 2px 4px rgba(255,255,255,0.3),
+      inset 0 -2px 4px rgba(0,0,0,0.4);
+  }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <canvas id="game" width="960" height="600"></canvas>
+
+  <div id="hud" style="display:none;">
+    <div class="hearts" id="hearts"></div>
+    <div class="stamina-bar"><div class="stamina-fill" id="stamina"></div></div>
+    <div class="stats">
+      <div>◆ RUPEES: <span id="rupees">0</span></div>
+      <div>☠ SLAIN: <span id="kills">0</span></div>
+    </div>
+  </div>
+
+  <div id="message"></div>
+
+  <div id="touch-controls">
+    <div id="dpad">
+      <div class="dpad-btn dpad-up" data-dir="up">▲</div>
+      <div class="dpad-btn dpad-down" data-dir="down">▼</div>
+      <div class="dpad-btn dpad-left" data-dir="left">◀</div>
+      <div class="dpad-btn dpad-right" data-dir="right">▶</div>
+    </div>
+    <div id="action-buttons">
+      <div class="action-btn heal small" data-action="heal">HEAL</div>
+      <div class="action-btn dash small" data-action="dash">DASH</div>
+      <div class="action-btn" data-action="slice">SLICE</div>
+    </div>
+  </div>
+
+  <div id="title-screen">
+    <div class="rune-border rune-top">◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆</div>
+    <div class="title">BLOOD OF<br>THE WILD</div>
+    <div class="subtitle">A Hyrule Drowned in Red</div>
+    <div class="flourish">✦ ◆ ✦</div>
+    <div class="tagline">
+      "The kingdom rots. The Calamity has won.<br>
+      You wake with a sword, a scar, and a name you don't remember.<br>
+      Cut your way through what's left."
+    </div>
+    <div class="controls">
+      <span class="key">WASD / ARROWS</span><span>Move</span>
+      <span class="key">SPACE / SLICE</span><span>Swing Sword</span>
+      <span class="key">SHIFT / DASH</span><span>Dash (stamina)</span>
+      <span class="key">E / HEAL</span><span>Heal at Shrine</span>
+    </div>
+    <button class="btn" onclick="startGame()">Draw Your Blade</button>
+    <div class="rune-border rune-bottom">◇ ◆ ◇ ◆ ◇ ◆ ◇ ◆ ◇</div>
+  </div>
+
+  <div id="game-over-screen">
+    <div class="title" id="go-title">FALLEN</div>
+    <div class="subtitle" id="go-sub">The wild drinks another hero...</div>
+    <div class="flourish">✦ ◆ ✦</div>
+    <div class="tagline" id="go-stats"></div>
+    <button class="btn" onclick="riseAgain()">Rise Again</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const W = canvas.width;
+const H = canvas.height;
+const TILE = 40;
+
+const state = {
+  running: false,
+  keys: {},
+  camera: { x: 0, y: 0 },
+  time: 0,
+  kills: 0,
+  rupees: 0,
+  shake: 0,
+  won: false,
+  blueClothes: false,
+};
+
+// Load blue clothes status IMMEDIATELY — try every available storage method
+// so the player keeps the tunic across reloads no matter what.
+(function loadBlueClothes() {
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('botw_hasWon') === 'true') {
+      state.blueClothes = true;
+      return;
+    }
+  } catch(e) {}
+})();
+
+// Also try the async window.storage API (Claude's persistent storage)
+async function loadFromClaudeStorage() {
+  try {
+    if (window.storage) {
+      const result = await window.storage.get('hasWon');
+      if (result && result.value === 'true') {
+        state.blueClothes = true;
+      }
+    }
+  } catch(e) {}
+}
+loadFromClaudeStorage();
+
+function saveBlueClothes() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('botw_hasWon', 'true');
+    }
+  } catch(e) {}
+  try {
+    if (window.storage) {
+      window.storage.set('hasWon', 'true');
+    }
+  } catch(e) {}
+}
+
+// --- WORLD ---
+const WORLD_W = 70;
+const WORLD_H = 50;
+const world = [];
+
+function genWorld() {
+  for (let y = 0; y < WORLD_H; y++) {
+    world[y] = [];
+    for (let x = 0; x < WORLD_W; x++) {
+      if (x === 0 || y === 0 || x === WORLD_W-1 || y === WORLD_H-1) {
+        world[y][x] = 'rock';
+      } else {
+        const n = Math.random();
+        if (n < 0.05) world[y][x] = 'tree';
+        else if (n < 0.065) world[y][x] = 'rock';
+        else if (n < 0.08) world[y][x] = 'bones';
+        else if (n < 0.095) world[y][x] = 'grass_tall';
+        else world[y][x] = 'grass';
+      }
+    }
+  }
+  // clear safe spawn area
+  for (let y = 22; y < 28; y++)
+    for (let x = 32; x < 38; x++)
+      world[y][x] = 'grass';
+
+  // shrines (healing)
+  const shrines = [[10,10],[55,12],[15,42],[58,40],[35,8]];
+  shrines.forEach(([x,y]) => {
+    for (let dy=-1; dy<=1; dy++)
+      for (let dx=-1; dx<=1; dx++)
+        if (world[y+dy] && world[y+dy][x+dx] !== 'rock') world[y+dy][x+dx] = 'grass';
+    world[y][x] = 'shrine';
+  });
+
+  // boss arena
+  for (let y = 4; y < 10; y++)
+    for (let x = 32; x < 40; x++)
+      world[y][x] = 'path';
+  world[6][35] = 'boss_marker';
+
+  // blood pools (decorative)
+  for (let i = 0; i < 15; i++) {
+    const bx = 2 + Math.floor(Math.random() * (WORLD_W-4));
+    const by = 2 + Math.floor(Math.random() * (WORLD_H-4));
+    if (world[by][bx] === 'grass') world[by][bx] = 'blood';
+  }
+}
+
+// --- PLAYER ---
+const player = {
+  x: 35 * TILE,
+  y: 25 * TILE,
+  w: 26, h: 26,
+  speed: 2.6,
+  dir: 'down',
+  health: 100,
+  maxHealth: 100,
+  stamina: 100,
+  maxStamina: 100,
+  attacking: false,
+  attackTimer: 0,
+  attackCool: 0,
+  invuln: 0,
+  dashing: false,
+  walkT: 0,
+  moving: false,
+};
+
+// --- ENEMIES ---
+const enemies = [];
+function spawnEnemies() {
+  const types = ['moblin','moblin','moblin','lizalfos','keese','keese'];
+  for (let i = 0; i < 35; i++) {
+    let x, y, tries = 0;
+    do {
+      x = (3 + Math.random() * (WORLD_W - 6)) * TILE;
+      y = (3 + Math.random() * (WORLD_H - 6)) * TILE;
+      tries++;
+    } while (tries < 25 && (isBlocked(x, y, 28, 28) || Math.hypot(x - player.x, y - player.y) < 280));
+    if (tries >= 25) continue;
+
+    const type = types[Math.floor(Math.random()*types.length)];
+    enemies.push(makeEnemy(x, y, type));
+  }
+}
+
+function makeEnemy(x, y, type) {
+  const base = {
+    moblin:   { hp: 4, speed: 0.85, dmg: 2, w: 34, h: 36, color: '#7a3a4a', eye:'#ff8800' },
+    lizalfos: { hp: 4, speed: 1.3, dmg: 2, w: 28, h: 30, color: '#4a6b3a', eye:'#ff3030' },
+    keese:    { hp: 1, speed: 1.7, dmg: 1, w: 22, h: 18, color: '#2a1a2a', eye:'#ff4040' },
+  }[type];
+  return {
+    x, y, type,
+    w: base.w, h: base.h,
+    hp: base.hp, maxHp: base.hp,
+    speed: base.speed,
+    dmg: base.dmg,
+    color: base.color,
+    eye: base.eye,
+    attackCool: 0,
+    hitFlash: 0,
+    knockX: 0, knockY: 0,
+    walkT: Math.random()*100,
+    alive: true,
+  };
+}
+
+// Boss
+let boss = null;
+function spawnBoss() {
+  boss = {
+    x: 35*TILE, y: 7*TILE,
+    w: 56, h: 60,
+    hp: 25, maxHp: 25,
+    speed: 1.1,
+    dmg: 2,
+    attackCool: 0,
+    hitFlash: 0,
+    knockX: 0, knockY: 0,
+    walkT: 0,
+    phase: 'idle',
+    chargeTimer: 0,
+  };
+}
+
+// --- PARTICLES ---
+const particles = [];
+function particle(x, y, color, count=6, speed=3, life=30) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x, y,
+      vx: (Math.random()-0.5) * speed * 2,
+      vy: (Math.random()-0.5) * speed * 2,
+      life, maxLife: life,
+      color,
+      size: 2 + Math.random()*3,
+    });
+  }
+}
+
+const rupeesDrops = [];
+function dropRupee(x, y) {
+  rupeesDrops.push({
+    x, y, vx: (Math.random()-0.5)*2, vy: -2-Math.random()*2,
+    bounce: 0, life: 600,
+  });
+}
+
+const floatingTexts = [];
+function floatText(x, y, text, color='#ff4040') {
+  floatingTexts.push({ x, y, text, color, life: 40, vy: -1 });
+}
+
+// --- COLLISION ---
+function isBlocked(x, y, w, h) {
+  const pts = [
+    [x, y], [x+w, y], [x, y+h], [x+w, y+h],
+    [x+w/2, y], [x+w/2, y+h], [x, y+h/2], [x+w, y+h/2],
+  ];
+  for (const [px, py] of pts) {
+    const tx = Math.floor(px / TILE);
+    const ty = Math.floor(py / TILE);
+    if (ty < 0 || ty >= WORLD_H || tx < 0 || tx >= WORLD_W) return true;
+    const t = world[ty][tx];
+    if (t === 'rock' || t === 'tree' || t === 'shrine') return true;
+  }
+  return false;
+}
+
+// --- INPUT ---
+window.addEventListener('keydown', e => {
+  state.keys[e.key.toLowerCase()] = true;
+  if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) e.preventDefault();
+});
+window.addEventListener('keyup', e => { state.keys[e.key.toLowerCase()] = false; });
+
+function keyDown(...keys) {
+  for (const k of keys) {
+    if (state.keys[k]) return true;
+  }
+  // Touch input mapping
+  if (keys.includes('w') || keys.includes('arrowup')) if (touchState.up) return true;
+  if (keys.includes('s') || keys.includes('arrowdown')) if (touchState.down) return true;
+  if (keys.includes('a') || keys.includes('arrowleft')) if (touchState.left) return true;
+  if (keys.includes('d') || keys.includes('arrowright')) if (touchState.right) return true;
+  if (keys.includes(' ') || keys.includes('j')) if (touchState.slice) return true;
+  if (keys.includes('shift')) if (touchState.dash) return true;
+  if (keys.includes('e')) if (touchState.heal) return true;
+  return false;
+}
+
+// --- UPDATE ---
+function update() {
+  if (!state.running) return;
+  state.time++;
+
+  updatePlayer();
+  updateEnemies();
+  if (boss) updateBoss();
+  updateParticles();
+  updateRupeeDrops();
+  updateFloatingTexts();
+  updateCamera();
+
+  if (state.shake > 0) state.shake--;
+}
+
+function updatePlayer() {
+  if (player.invuln > 0) player.invuln--;
+  if (player.attackCool > 0) player.attackCool--;
+
+  // attack
+  if (player.attacking) {
+    player.attackTimer--;
+    if (player.attackTimer <= 0) player.attacking = false;
+  } else if ((keyDown(' ', 'j')) && player.attackCool <= 0) {
+    player.attacking = true;
+    player.attackTimer = 14;
+    player.attackCool = 22;
+    doSwordHit();
+  }
+
+  // movement
+  let dx = 0, dy = 0;
+  if (keyDown('w','arrowup')) { dy -= 1; player.dir='up'; }
+  if (keyDown('s','arrowdown')) { dy += 1; player.dir='down'; }
+  if (keyDown('a','arrowleft')) { dx -= 1; player.dir='left'; }
+  if (keyDown('d','arrowright')) { dx += 1; player.dir='right'; }
+
+  player.moving = (dx !== 0 || dy !== 0);
+
+  // dash
+  player.dashing = false;
+  let speed = player.speed;
+  if (keyDown('shift') && player.stamina > 0 && player.moving) {
+    player.dashing = true;
+    speed = player.speed * 1.9;
+    player.stamina = Math.max(0, player.stamina - 1.5);
+  } else {
+    player.stamina = Math.min(player.maxStamina, player.stamina + 0.6);
+  }
+
+  if (player.attacking) speed *= 0.3;
+
+  if (dx && dy) { dx *= 0.707; dy *= 0.707; }
+
+  const nx = player.x + dx * speed;
+  const ny = player.y + dy * speed;
+  if (!isBlocked(nx, player.y, player.w, player.h)) player.x = nx;
+  if (!isBlocked(player.x, ny, player.w, player.h)) player.y = ny;
+
+  if (player.moving) player.walkT += player.dashing ? 0.4 : 0.25;
+
+  // interact
+  if (keyDown('e')) {
+    const cx = Math.floor((player.x + player.w/2) / TILE);
+    const cy = Math.floor((player.y + player.h/2) / TILE);
+    for (let dy=-1; dy<=1; dy++) {
+      for (let dx=-1; dx<=1; dx++) {
+        const t = world[cy+dy] && world[cy+dy][cx+dx];
+        if (t === 'shrine') {
+          if (player.health < player.maxHealth) {
+            player.health = player.maxHealth;
+            showMessage('The shrine restores you.');
+            particle(player.x+player.w/2, player.y+player.h/2, '#ffcc44', 20, 4, 40);
+          }
+        }
+      }
+    }
+  }
+
+  // step on blood → tiny heal chance? no, just flavor
+  // check boss zone
+  if (!boss && !state.won && player.y < 10*TILE && player.x > 30*TILE && player.x < 42*TILE) {
+    spawnBoss();
+    showMessage('⚔ GANON\'S REMNANT STIRS ⚔');
+    state.shake = 20;
+  }
+}
+
+function doSwordHit() {
+  const reach = 44;
+  let hx = player.x + player.w/2, hy = player.y + player.h/2;
+  let hw = 40, hh = 40;
+  if (player.dir === 'up') { hy -= reach; hw = 50; hh = reach; hx -= hw/2; hy -= 0; }
+  else if (player.dir === 'down') { hy += 0; hw = 50; hh = reach; hx -= hw/2; }
+  else if (player.dir === 'left') { hx -= reach; hw = reach; hh = 50; hy -= hh/2; }
+  else { hw = reach; hh = 50; hy -= hh/2; }
+
+  // rectangle hit check against enemies
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    if (rectOverlap(hx, hy, hw, hh, e.x, e.y, e.w, e.h)) {
+      damageEnemy(e, 1);
+    }
+  }
+  if (boss && rectOverlap(hx, hy, hw, hh, boss.x, boss.y, boss.w, boss.h)) {
+    damageBoss(1);
+  }
+}
+
+function damageEnemy(e, dmg) {
+  e.hp -= dmg;
+  e.hitFlash = 8;
+  const ang = Math.atan2(e.y - player.y, e.x - player.x);
+  e.knockX = Math.cos(ang) * 8;
+  e.knockY = Math.sin(ang) * 8;
+  particle(e.x+e.w/2, e.y+e.h/2, '#ffffff', 8, 4, 20);
+  particle(e.x+e.w/2, e.y+e.h/2, '#88ddff', 6, 5, 25);
+  state.shake = 5;
+  if (e.hp <= 0) {
+    e.alive = false;
+    state.kills++;
+    // puff of smoke on defeat (BOTW style)
+    particle(e.x+e.w/2, e.y+e.h/2, '#5a3a2a', 15, 4, 40);
+    particle(e.x+e.w/2, e.y+e.h/2, '#8a6a5a', 10, 3, 35);
+    particle(e.x+e.w/2, e.y+e.h/2, '#f5d76e', 8, 5, 30);
+    // drop rupee
+    if (Math.random() < 0.7) dropRupee(e.x+e.w/2, e.y+e.h/2);
+    updateHUD();
+  }
+}
+
+function damageBoss(dmg) {
+  boss.hp -= dmg;
+  boss.hitFlash = 8;
+  const ang = Math.atan2(boss.y - player.y, boss.x - player.x);
+  boss.knockX = Math.cos(ang) * 3;
+  boss.knockY = Math.sin(ang) * 3;
+  particle(boss.x+boss.w/2, boss.y+boss.h/2, '#b01818', 15, 5, 30);
+  particle(boss.x+boss.w/2, boss.y+boss.h/2, '#ff00ff', 8, 6, 30);
+  state.shake = 8;
+  if (boss.hp <= 0) {
+    particle(boss.x+boss.w/2, boss.y+boss.h/2, '#b01818', 60, 8, 80);
+    particle(boss.x+boss.w/2, boss.y+boss.h/2, '#ff00ff', 40, 7, 70);
+    particle(boss.x+boss.w/2, boss.y+boss.h/2, '#ffcc44', 30, 6, 60);
+    state.shake = 40;
+    state.won = true;
+    state.blueClothes = true;
+    // persist victory so blue clothes carry forward — saves to both localStorage and Claude storage
+    saveBlueClothes();
+    boss = null;
+    // burst of blue sparkles on the player to show the transformation
+    setTimeout(() => {
+      particle(player.x+player.w/2, player.y+player.h/2, '#4080ff', 30, 5, 50);
+      particle(player.x+player.w/2, player.y+player.h/2, '#80c0ff', 20, 4, 40);
+      particle(player.x+player.w/2, player.y+player.h/2, '#ffffff', 15, 6, 30);
+      showMessage('✦ THE CHAMPION\'S TUNIC IS YOURS ✦');
+    }, 800);
+    setTimeout(() => {
+      document.getElementById('go-title').textContent = 'VICTORY';
+      document.getElementById('go-sub').textContent = 'The calamity is ended.';
+      document.getElementById('go-stats').innerHTML =
+        `The remnant of Ganon falls.<br>Hyrule, for a moment, breathes.<br><br>` +
+        `You have earned the <b style="color:#4080ff;text-shadow:0 0 8px #4080ff">Champion's Tunic</b>.<br><br>` +
+        `Monsters slain: <b>${state.kills}</b> &nbsp; Rupees: <b>${state.rupees}</b>`;
+      document.getElementById('game-over-screen').style.display = 'flex';
+      state.running = false;
+    }, 2800);
+  }
+}
+
+function rectOverlap(ax, ay, aw, ah, bx, by, bw, bh) {
+  return ax < bx+bw && ax+aw > bx && ay < by+bh && ay+ah > by;
+}
+
+function updateEnemies() {
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    e.walkT += 0.15;
+    if (e.hitFlash > 0) e.hitFlash--;
+    if (e.attackCool > 0) e.attackCool--;
+
+    // knockback decay
+    if (Math.abs(e.knockX) > 0.1 || Math.abs(e.knockY) > 0.1) {
+      const nx = e.x + e.knockX;
+      const ny = e.y + e.knockY;
+      if (!isBlocked(nx, e.y, e.w, e.h)) e.x = nx;
+      if (!isBlocked(e.x, ny, e.w, e.h)) e.y = ny;
+      e.knockX *= 0.8;
+      e.knockY *= 0.8;
+    }
+
+    const dist = Math.hypot(player.x - e.x, player.y - e.y);
+    if (dist < 300) {
+      // chase
+      const ang = Math.atan2(player.y - e.y, player.x - e.x);
+      const dx = Math.cos(ang) * e.speed;
+      const dy = Math.sin(ang) * e.speed;
+      if (!isBlocked(e.x+dx, e.y, e.w, e.h)) e.x += dx;
+      if (!isBlocked(e.x, e.y+dy, e.w, e.h)) e.y += dy;
+
+      // attack
+      if (dist < 32 && e.attackCool <= 0 && player.invuln <= 0) {
+        hurtPlayer(e.dmg, e.x, e.y);
+        e.attackCool = 60;
+      }
+    } else {
+      // idle wander
+      if (Math.random() < 0.02) {
+        const ang = Math.random() * Math.PI * 2;
+        e.wanderX = Math.cos(ang) * e.speed * 0.5;
+        e.wanderY = Math.sin(ang) * e.speed * 0.5;
+      }
+      if (e.wanderX) {
+        if (!isBlocked(e.x+e.wanderX, e.y, e.w, e.h)) e.x += e.wanderX;
+        if (!isBlocked(e.x, e.y+e.wanderY, e.w, e.h)) e.y += e.wanderY;
+      }
+    }
+  }
+}
+
+function updateBoss() {
+  boss.walkT += 0.1;
+  if (boss.hitFlash > 0) boss.hitFlash--;
+  if (boss.attackCool > 0) boss.attackCool--;
+
+  const nx = boss.x + boss.knockX;
+  const ny = boss.y + boss.knockY;
+  if (!isBlocked(nx, boss.y, boss.w, boss.h)) boss.x = nx;
+  if (!isBlocked(boss.x, ny, boss.w, boss.h)) boss.y = ny;
+  boss.knockX *= 0.85;
+  boss.knockY *= 0.85;
+
+  const dist = Math.hypot(player.x - boss.x, player.y - boss.y);
+  const ang = Math.atan2(player.y - boss.y, player.x - boss.x);
+
+  if (dist > 50) {
+    const dx = Math.cos(ang) * boss.speed;
+    const dy = Math.sin(ang) * boss.speed;
+    if (!isBlocked(boss.x+dx, boss.y, boss.w, boss.h)) boss.x += dx;
+    if (!isBlocked(boss.x, boss.y+dy, boss.w, boss.h)) boss.y += dy;
+  }
+
+  if (dist < 56 && boss.attackCool <= 0 && player.invuln <= 0) {
+    hurtPlayer(boss.dmg, boss.x, boss.y);
+    boss.attackCool = 70;
+  }
+}
+
+function hurtPlayer(dmg, sx, sy) {
+  player.health -= dmg;
+  player.invuln = 60;
+  const ang = Math.atan2(player.y - sy, player.x - sx);
+  // quick knockback
+  for (let i = 0; i < 6; i++) {
+    const bx = player.x + Math.cos(ang)*2;
+    const by = player.y + Math.sin(ang)*2;
+    if (!isBlocked(bx, player.y, player.w, player.h)) player.x = bx;
+    if (!isBlocked(player.x, by, player.w, player.h)) player.y = by;
+  }
+  particle(player.x+player.w/2, player.y+player.h/2, '#ff6060', 8, 4, 20);
+  state.shake = 10;
+  updateHUD();
+
+  if (player.health <= 0) {
+    // STRIP THE TUNIC IMMEDIATELY — before any timeouts, before any reload
+    state.blueClothes = false;
+    try {
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('botw_hasWon');
+    } catch(e) {}
+    try {
+      if (window.storage) window.storage.delete('hasWon');
+    } catch(e) {}
+
+    state.running = false;
+    particle(player.x+player.w/2, player.y+player.h/2, '#ff6060', 30, 6, 60);
+    particle(player.x+player.w/2, player.y+player.h/2, '#f5d76e', 20, 5, 50);
+    setTimeout(() => {
+      document.getElementById('go-stats').innerHTML =
+        `Your blood soaks into the soil of Hyrule.<br><br>` +
+        `Monsters slain: <b>${state.kills}</b> &nbsp; Rupees: <b>${state.rupees}</b>`;
+      document.getElementById('game-over-screen').style.display = 'flex';
+    }, 800);
+  }
+}
+
+function updateParticles() {
+  for (let i = particles.length-1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.15;
+    p.vx *= 0.95;
+    p.life--;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+function updateRupeeDrops() {
+  for (let i = rupeesDrops.length-1; i >= 0; i--) {
+    const r = rupeesDrops[i];
+    r.x += r.vx;
+    r.y += r.vy;
+    r.vy += 0.3;
+    if (r.vy > 0 && r.bounce < 1) {
+      r.bounce++;
+      r.vy = -2;
+    } else if (r.bounce >= 1) {
+      r.vy = 0;
+      r.vx *= 0.9;
+    }
+    r.life--;
+    if (rectOverlap(player.x, player.y, player.w, player.h, r.x-8, r.y-8, 16, 16)) {
+      state.rupees += 5;
+      floatText(r.x, r.y, '+5', '#40ff40');
+      particle(r.x, r.y, '#40ff40', 6, 3, 20);
+      rupeesDrops.splice(i, 1);
+      updateHUD();
+      continue;
+    }
+    if (r.life <= 0) rupeesDrops.splice(i, 1);
+  }
+}
+
+function updateFloatingTexts() {
+  for (let i = floatingTexts.length-1; i >= 0; i--) {
+    const t = floatingTexts[i];
+    t.y += t.vy;
+    t.life--;
+    if (t.life <= 0) floatingTexts.splice(i, 1);
+  }
+}
+
+function updateCamera() {
+  const tx = player.x + player.w/2 - W/2;
+  const ty = player.y + player.h/2 - H/2;
+  state.camera.x += (tx - state.camera.x) * 0.1;
+  state.camera.y += (ty - state.camera.y) * 0.1;
+  state.camera.x = Math.max(0, Math.min(WORLD_W*TILE - W, state.camera.x));
+  state.camera.y = Math.max(0, Math.min(WORLD_H*TILE - H, state.camera.y));
+}
+
+// --- DRAW ---
+function draw() {
+  ctx.save();
+  let shx = 0, shy = 0;
+  if (state.shake > 0) {
+    shx = (Math.random()-0.5) * state.shake;
+    shy = (Math.random()-0.5) * state.shake;
+  }
+  ctx.translate(-state.camera.x + shx, -state.camera.y + shy);
+
+  drawWorld();
+  drawRupeeDrops();
+
+  // sort by y for depth
+  const drawables = [];
+  for (const e of enemies) if (e.alive) drawables.push({ y: e.y+e.h, draw: () => drawEnemy(e) });
+  drawables.push({ y: player.y+player.h, draw: () => drawPlayer() });
+  if (boss) drawables.push({ y: boss.y+boss.h, draw: () => drawBoss() });
+  drawables.sort((a,b) => a.y - b.y);
+  for (const d of drawables) d.draw();
+
+  drawParticles();
+  drawFloatingTexts();
+
+  ctx.restore();
+
+  drawVignette();
+  if (boss) drawBossBar();
+}
+
+function drawWorld() {
+  const startX = Math.floor(state.camera.x / TILE);
+  const startY = Math.floor(state.camera.y / TILE);
+  const endX = Math.min(WORLD_W, startX + Math.ceil(W/TILE) + 2);
+  const endY = Math.min(WORLD_H, startY + Math.ceil(H/TILE) + 2);
+
+  for (let y = startY; y < endY; y++) {
+    for (let x = startX; x < endX; x++) {
+      const t = world[y][x];
+      const px = x*TILE, py = y*TILE;
+
+      // grass base — bright Nintendo green
+      const shade = ((x*7 + y*13) % 3);
+      ctx.fillStyle = shade === 0 ? '#7ab858' : shade === 1 ? '#6ba848' : '#8bc868';
+      ctx.fillRect(px, py, TILE, TILE);
+
+      // grass tufts / texture
+      if ((x*3+y*5) % 7 === 0) {
+        ctx.fillStyle = 'rgba(80, 140, 60, 0.3)';
+        ctx.fillRect(px+4, py+4, 3, 2);
+        ctx.fillRect(px+18, py+14, 3, 2);
+        ctx.fillRect(px+28, py+26, 3, 2);
+      }
+      // subtle flower dots
+      if ((x*11+y*7) % 23 === 0) {
+        ctx.fillStyle = '#ffcc40';
+        ctx.fillRect(px+12, py+20, 2, 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(px+26, py+8, 2, 2);
+      }
+
+      if (t === 'path') {
+        ctx.fillStyle = '#c9a878';
+        ctx.fillRect(px, py, TILE, TILE);
+        ctx.fillStyle = '#b09060';
+        for (let i = 0; i < 3; i++) {
+          ctx.fillRect(px + (i*13+x*7)%TILE, py + (i*17+y*5)%TILE, 3, 3);
+        }
+      }
+      if (t === 'blood') {
+        // Nintendo version: little flower patch instead of blood
+        ctx.fillStyle = '#ff6090';
+        ctx.fillRect(px+10, py+14, 3, 3);
+        ctx.fillRect(px+18, py+20, 3, 3);
+        ctx.fillStyle = '#ffaacc';
+        ctx.fillRect(px+11, py+15, 1, 1);
+        ctx.fillRect(px+19, py+21, 1, 1);
+        ctx.fillStyle = '#ffff60';
+        ctx.fillRect(px+24, py+10, 2, 2);
+      }
+      if (t === 'grass_tall') {
+        ctx.fillStyle = '#4a8030';
+        ctx.fillRect(px+8, py+14, 3, 12);
+        ctx.fillRect(px+16, py+10, 3, 16);
+        ctx.fillRect(px+24, py+16, 3, 10);
+        ctx.fillRect(px+30, py+12, 3, 14);
+        ctx.fillStyle = '#5fa040';
+        ctx.fillRect(px+9, py+14, 1, 12);
+        ctx.fillRect(px+17, py+10, 1, 16);
+      }
+      if (t === 'bones') {
+        // Nintendo: treasure chest instead of bones
+        ctx.fillStyle = '#6a3a18';
+        ctx.fillRect(px+6, py+14, 28, 20);
+        ctx.fillStyle = '#8a5020';
+        ctx.fillRect(px+6, py+14, 28, 6);
+        ctx.fillStyle = '#d4af37';
+        ctx.fillRect(px+4, py+14, 32, 2);
+        ctx.fillRect(px+4, py+20, 32, 2);
+        ctx.fillRect(px+4, py+33, 32, 2);
+        ctx.fillRect(px+18, py+22, 4, 6);
+      }
+      if (t === 'tree') {
+        // bright cel-shaded tree
+        // shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.beginPath();
+        ctx.ellipse(px+TILE/2, py+TILE-4, 16, 5, 0, 0, Math.PI*2);
+        ctx.fill();
+        // trunk
+        ctx.fillStyle = '#6a3a18';
+        ctx.fillRect(px+TILE/2-4, py+24, 8, 14);
+        ctx.fillStyle = '#4a2a10';
+        ctx.fillRect(px+TILE/2-4, py+24, 2, 14);
+        // leaves — big round
+        ctx.fillStyle = '#2a6030';
+        ctx.beginPath();
+        ctx.arc(px+TILE/2, py+16, 16, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#3a8040';
+        ctx.beginPath();
+        ctx.arc(px+TILE/2-3, py+13, 12, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#5aa858';
+        ctx.beginPath();
+        ctx.arc(px+TILE/2-5, py+11, 5, 0, Math.PI*2);
+        ctx.fill();
+      }
+      if (t === 'rock') {
+        // outer/darker edge
+        ctx.fillStyle = '#6a6858';
+        ctx.beginPath();
+        ctx.moveTo(px+4, py+TILE-4);
+        ctx.lineTo(px+8, py+8);
+        ctx.lineTo(px+TILE-8, py+6);
+        ctx.lineTo(px+TILE-4, py+TILE-4);
+        ctx.closePath();
+        ctx.fill();
+        // lighter top
+        ctx.fillStyle = '#a8a698';
+        ctx.beginPath();
+        ctx.moveTo(px+10, py+TILE-8);
+        ctx.lineTo(px+12, py+12);
+        ctx.lineTo(px+TILE-12, py+10);
+        ctx.lineTo(px+TILE-10, py+TILE-8);
+        ctx.closePath();
+        ctx.fill();
+        // highlight
+        ctx.fillStyle = '#d0cec0';
+        ctx.fillRect(px+14, py+14, 6, 3);
+      }
+      if (t === 'shrine') {
+        // Sheikah tower — teal with orange rune
+        ctx.fillStyle = '#1a3a3a';
+        ctx.fillRect(px+6, py+4, TILE-12, TILE-6);
+        ctx.fillStyle = '#2a5a5a';
+        ctx.fillRect(px+8, py+6, TILE-16, TILE-10);
+        const pulse = Math.sin(state.time*0.08)*0.3 + 0.7;
+        // orange sheikah eye
+        ctx.fillStyle = `rgba(255, 140, 40, ${pulse})`;
+        ctx.beginPath();
+        ctx.ellipse(px+TILE/2, py+18, 8, 4, 0, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = `rgba(255, 200, 60, ${pulse})`;
+        ctx.fillRect(px+TILE/2-2, py+17, 4, 3);
+        // tear drop
+        ctx.fillStyle = `rgba(255, 140, 40, ${pulse})`;
+        ctx.fillRect(px+TILE/2-1, py+22, 2, 5);
+        // teal glow
+        const g = ctx.createRadialGradient(px+TILE/2, py+TILE/2, 0, px+TILE/2, py+TILE/2, 40);
+        g.addColorStop(0, `rgba(100, 220, 220, ${pulse*0.4})`);
+        g.addColorStop(1, 'rgba(100, 220, 220, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(px-20, py-20, TILE+40, TILE+40);
+      }
+      if (t === 'boss_marker') {
+        const pulse = Math.sin(state.time*0.1)*0.4 + 0.6;
+        ctx.fillStyle = `rgba(255, 120, 60, ${pulse*0.3})`;
+        ctx.fillRect(px-TILE, py-TILE, TILE*3, TILE*3);
+      }
+    }
+  }
+}
+
+function drawPlayer() {
+  const px = player.x, py = player.y;
+  const blink = player.invuln > 0 && Math.floor(player.invuln/4) % 2 === 0;
+  if (blink) { ctx.globalAlpha = 0.4; }
+
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.beginPath();
+  ctx.ellipse(px+player.w/2, py+player.h+2, 12, 4, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  const bob = player.moving ? Math.sin(player.walkT)*2 : 0;
+
+  // legs / boots
+  ctx.fillStyle = '#6a3a18';
+  ctx.fillRect(px+4, py+player.h-6+bob, 6, 8);
+  ctx.fillRect(px+player.w-10, py+player.h-6-bob, 6, 8);
+  ctx.fillStyle = '#4a2a10';
+  ctx.fillRect(px+4, py+player.h-2+bob, 6, 2);
+  ctx.fillRect(px+player.w-10, py+player.h-2-bob, 6, 2);
+
+  // body — green or blue Champion's Tunic
+  const tunicMain = state.blueClothes ? '#2a60c0' : '#3aa040';
+  const tunicHi   = state.blueClothes ? '#5090e8' : '#5ac860';
+  ctx.fillStyle = tunicMain;
+  ctx.fillRect(px+3, py+10, player.w-6, 14);
+  // tunic highlight
+  ctx.fillStyle = tunicHi;
+  ctx.fillRect(px+3, py+10, player.w-6, 3);
+  // tunic trim — gold for green, white/silver for champion's
+  ctx.fillStyle = state.blueClothes ? '#e0eaff' : '#f5d76e';
+  ctx.fillRect(px+3, py+22, player.w-6, 2);
+  // sheikah eye on champion's tunic chest
+  if (state.blueClothes) {
+    ctx.fillStyle = '#ff8030';
+    ctx.fillRect(px+player.w/2-3, py+14, 6, 2);
+    ctx.fillStyle = '#ffaa50';
+    ctx.fillRect(px+player.w/2-1, py+13, 2, 1);
+  }
+
+  // belt
+  ctx.fillStyle = '#6a3a18';
+  ctx.fillRect(px+3, py+19, player.w-6, 3);
+  ctx.fillStyle = '#d4af37';
+  ctx.fillRect(px+11, py+19, 4, 3);
+
+  // head
+  ctx.fillStyle = '#f5d0a0';
+  ctx.fillRect(px+6, py+2, player.w-12, 10);
+
+  // hair — Nintendo blonde
+  ctx.fillStyle = '#f5d76e';
+  ctx.fillRect(px+5, py, player.w-10, 5);
+  ctx.fillRect(px+5, py+3, 3, 4);
+  ctx.fillStyle = '#e0b840';
+  ctx.fillRect(px+5, py+4, player.w-10, 1);
+
+  // cap — green or blue
+  const capMain = state.blueClothes ? '#1a4a90' : '#2a8030';
+  const capHi   = state.blueClothes ? '#3a70b8' : '#4aa040';
+  ctx.fillStyle = capMain;
+  ctx.fillRect(px+5, py, player.w-10, 3);
+  ctx.fillStyle = capHi;
+  ctx.fillRect(px+5, py, player.w-10, 1);
+  // cap point
+  ctx.fillStyle = capMain;
+  ctx.fillRect(px+player.w-8, py-3, 4, 4);
+
+  // pointy ear
+  ctx.fillStyle = '#f5d0a0';
+  if (player.dir === 'left') ctx.fillRect(px+5, py+8, 2, 3);
+  else if (player.dir === 'right') ctx.fillRect(px+player.w-7, py+8, 2, 3);
+
+  // eyes based on direction
+  ctx.fillStyle = '#1a3a6a';
+  if (player.dir === 'left') {
+    ctx.fillRect(px+8, py+7, 2, 2);
+  } else if (player.dir === 'right') {
+    ctx.fillRect(px+player.w-10, py+7, 2, 2);
+  } else if (player.dir === 'down') {
+    ctx.fillRect(px+9, py+7, 2, 2);
+    ctx.fillRect(px+player.w-11, py+7, 2, 2);
+  } else {
+    // up — back of cap
+    ctx.fillStyle = state.blueClothes ? '#0a2a5a' : '#1a5020';
+    ctx.fillRect(px+5, py+5, player.w-10, 3);
+  }
+
+  // sword — drawn when attacking or idle
+  const swingT = player.attacking ? (1 - player.attackTimer/14) : -1;
+  if (player.attacking) {
+    drawSwordSwing(px+player.w/2, py+player.h/2, player.dir, swingT);
+  } else {
+    // sheathed on back
+    ctx.fillStyle = '#888';
+    if (player.dir === 'down') ctx.fillRect(px+player.w-4, py+6, 2, 14);
+  }
+
+  ctx.globalAlpha = 1;
+}
+
+function drawSwordSwing(cx, cy, dir, t) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  let baseAngle = 0;
+  if (dir === 'up') baseAngle = -Math.PI/2;
+  else if (dir === 'down') baseAngle = Math.PI/2;
+  else if (dir === 'left') baseAngle = Math.PI;
+  const swingRange = Math.PI * 1.1;
+  const angle = baseAngle - swingRange/2 + t * swingRange;
+  ctx.rotate(angle);
+
+  // arc slash trail — bright cyan like BOTW
+  ctx.strokeStyle = `rgba(180, 240, 255, ${(1-t)*0.7})`;
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(0, 0, 32, -0.6, 0.6);
+  ctx.stroke();
+
+  ctx.strokeStyle = `rgba(255, 255, 255, ${(1-t)*0.9})`;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, 34, -0.4, 0.4);
+  ctx.stroke();
+
+  // blade — Master Sword blue-white
+  ctx.fillStyle = '#e0f0ff';
+  ctx.fillRect(10, -2, 28, 4);
+  ctx.fillStyle = '#88b8e0';
+  ctx.fillRect(10, 0, 28, 1);
+  // tip
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.moveTo(38, -2); ctx.lineTo(44, 0); ctx.lineTo(38, 2);
+  ctx.fill();
+  // guard — golden cross-guard
+  ctx.fillStyle = '#f5d76e';
+  ctx.fillRect(7, -5, 3, 10);
+  ctx.fillStyle = '#d4af37';
+  ctx.fillRect(8, -5, 2, 10);
+  // hilt — blue
+  ctx.fillStyle = '#2860a0';
+  ctx.fillRect(0, -2, 8, 4);
+  ctx.fillStyle = '#4080c0';
+  ctx.fillRect(0, -2, 8, 1);
+  // pommel
+  ctx.fillStyle = '#f5d76e';
+  ctx.fillRect(-2, -2, 2, 4);
+  ctx.restore();
+}
+
+function drawEnemy(e) {
+  const ex = e.x, ey = e.y;
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.beginPath();
+  ctx.ellipse(ex+e.w/2, ey+e.h+2, e.w/3, 4, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  const flash = e.hitFlash > 0;
+  const bob = Math.sin(e.walkT)*1.5;
+
+  if (e.type === 'keese') {
+    // flying bat
+    const flap = Math.sin(e.walkT*3)*3;
+    ctx.fillStyle = flash ? '#fff' : e.color;
+    ctx.beginPath();
+    ctx.ellipse(ex+e.w/2, ey+e.h/2+bob, 8, 6, 0, 0, Math.PI*2);
+    ctx.fill();
+    // wings
+    ctx.beginPath();
+    ctx.moveTo(ex+e.w/2-6, ey+e.h/2+bob);
+    ctx.lineTo(ex-2, ey+e.h/2+bob-flap);
+    ctx.lineTo(ex+e.w/2-6, ey+e.h/2+bob+4);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(ex+e.w/2+6, ey+e.h/2+bob);
+    ctx.lineTo(ex+e.w+2, ey+e.h/2+bob-flap);
+    ctx.lineTo(ex+e.w/2+6, ey+e.h/2+bob+4);
+    ctx.fill();
+    // eyes
+    ctx.fillStyle = flash ? '#000' : e.eye;
+    ctx.fillRect(ex+e.w/2-3, ey+e.h/2-1+bob, 2, 2);
+    ctx.fillRect(ex+e.w/2+1, ey+e.h/2-1+bob, 2, 2);
+  } else {
+    // moblin / lizalfos — beefy brute
+    // legs
+    ctx.fillStyle = flash ? '#fff' : '#2a1a0a';
+    ctx.fillRect(ex+4, ey+e.h-8, 6, 8);
+    ctx.fillRect(ex+e.w-10, ey+e.h-8, 6, 8);
+    // body — broad
+    ctx.fillStyle = flash ? '#fff' : e.color;
+    ctx.fillRect(ex+2, ey+12+bob, e.w-4, e.h-20);
+    // belly lighter
+    ctx.fillStyle = flash ? '#fff' : (e.type === 'moblin' ? '#a25868' : '#6a8b5a');
+    ctx.fillRect(ex+6, ey+16+bob, e.w-12, e.h-26);
+    // head — bigger for moblin
+    ctx.fillStyle = flash ? '#fff' : e.color;
+    if (e.type === 'moblin') {
+      ctx.fillRect(ex+3, ey+2+bob, e.w-6, 14);
+      // snout (pig-like)
+      ctx.fillStyle = flash ? '#fff' : '#5a2830';
+      ctx.fillRect(ex+e.w/2-4, ey+10+bob, 8, 6);
+      // nostrils
+      ctx.fillStyle = flash ? '#000' : '#1a0a10';
+      ctx.fillRect(ex+e.w/2-3, ey+12+bob, 2, 2);
+      ctx.fillRect(ex+e.w/2+1, ey+12+bob, 2, 2);
+      // tusks
+      ctx.fillStyle = flash ? '#000' : '#f0e8d0';
+      ctx.fillRect(ex+e.w/2-4, ey+15+bob, 2, 3);
+      ctx.fillRect(ex+e.w/2+2, ey+15+bob, 2, 3);
+      // big floppy ears
+      ctx.fillStyle = flash ? '#fff' : e.color;
+      ctx.fillRect(ex-1, ey+4+bob, 4, 6);
+      ctx.fillRect(ex+e.w-3, ey+4+bob, 4, 6);
+    } else {
+      // lizalfos head
+      ctx.fillRect(ex+5, ey+2+bob, e.w-10, 10);
+      // horns
+      ctx.fillStyle = flash ? '#fff' : '#1a1010';
+      ctx.fillRect(ex+4, ey-2+bob, 2, 5);
+      ctx.fillRect(ex+e.w-6, ey-2+bob, 2, 5);
+    }
+    // glowing eyes
+    ctx.fillStyle = flash ? '#000' : e.eye;
+    if (e.type === 'moblin') {
+      ctx.fillRect(ex+7, ey+6+bob, 3, 3);
+      ctx.fillRect(ex+e.w-10, ey+6+bob, 3, 3);
+    } else {
+      ctx.fillRect(ex+7, ey+6+bob, 2, 2);
+      ctx.fillRect(ex+e.w-9, ey+6+bob, 2, 2);
+      // lizalfos mouth fangs
+      ctx.fillStyle = flash ? '#000' : '#fff';
+      ctx.fillRect(ex+9, ey+10+bob, 2, 2);
+      ctx.fillRect(ex+e.w-11, ey+10+bob, 2, 2);
+    }
+    // weapon — moblins carry big spiked clubs
+    if (e.type === 'moblin') {
+      // club shaft
+      ctx.fillStyle = flash ? '#fff' : '#4a2a10';
+      ctx.fillRect(ex+e.w-2, ey+14+bob, 3, 18);
+      // club head
+      ctx.fillStyle = flash ? '#fff' : '#6a4a20';
+      ctx.fillRect(ex+e.w-4, ey+10+bob, 7, 8);
+      // spikes
+      ctx.fillStyle = flash ? '#000' : '#cccccc';
+      ctx.fillRect(ex+e.w-5, ey+12+bob, 2, 2);
+      ctx.fillRect(ex+e.w+2, ey+12+bob, 2, 2);
+      ctx.fillRect(ex+e.w-1, ey+8+bob, 2, 2);
+    } else {
+      // lizalfos crude sword
+      ctx.fillStyle = flash ? '#fff' : '#6a4020';
+      ctx.fillRect(ex+e.w-2, ey+12+bob, 2, 12);
+      ctx.fillStyle = flash ? '#fff' : '#888';
+      ctx.fillRect(ex+e.w-3, ey+10+bob, 4, 3);
+    }
+  }
+
+  // hp bar if damaged
+  if (e.hp < e.maxHp) {
+    ctx.fillStyle = '#1a0505';
+    ctx.fillRect(ex, ey-6, e.w, 3);
+    ctx.fillStyle = '#c03030';
+    ctx.fillRect(ex, ey-6, e.w * (e.hp/e.maxHp), 3);
+  }
+}
+
+function drawBoss() {
+  const bx = boss.x, by = boss.y;
+  const flash = boss.hitFlash > 0;
+  const bob = Math.sin(boss.walkT)*3;
+
+  // aura
+  const g = ctx.createRadialGradient(bx+boss.w/2, by+boss.h/2, 0, bx+boss.w/2, by+boss.h/2, 80);
+  g.addColorStop(0, 'rgba(180, 20, 180, 0.3)');
+  g.addColorStop(1, 'rgba(180, 20, 180, 0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(bx-40, by-40, boss.w+80, boss.h+80);
+
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.beginPath();
+  ctx.ellipse(bx+boss.w/2, by+boss.h+2, boss.w/2, 8, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // body — dark armored beast
+  ctx.fillStyle = flash ? '#fff' : '#1a0a1a';
+  ctx.fillRect(bx+6, by+20+bob, boss.w-12, boss.h-28);
+  // armor plates
+  ctx.fillStyle = flash ? '#fff' : '#3a1a3a';
+  ctx.fillRect(bx+8, by+22+bob, boss.w-16, 5);
+  ctx.fillRect(bx+8, by+32+bob, boss.w-16, 5);
+  ctx.fillRect(bx+8, by+42+bob, boss.w-16, 5);
+
+  // head — horned
+  ctx.fillStyle = flash ? '#fff' : '#2a0a0a';
+  ctx.fillRect(bx+10, by+4+bob, boss.w-20, 18);
+  // horns
+  ctx.fillStyle = flash ? '#fff' : '#6a2020';
+  ctx.beginPath();
+  ctx.moveTo(bx+10, by+6+bob); ctx.lineTo(bx+2, by-4+bob); ctx.lineTo(bx+14, by+4+bob);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(bx+boss.w-10, by+6+bob); ctx.lineTo(bx+boss.w-2, by-4+bob); ctx.lineTo(bx+boss.w-14, by+4+bob);
+  ctx.fill();
+
+  // glowing eyes
+  const eyepulse = Math.sin(state.time*0.2)*0.3+0.7;
+  ctx.fillStyle = flash ? '#000' : `rgba(255, 60, 200, ${eyepulse})`;
+  ctx.fillRect(bx+16, by+10+bob, 5, 4);
+  ctx.fillRect(bx+boss.w-21, by+10+bob, 5, 4);
+
+  // arms
+  ctx.fillStyle = flash ? '#fff' : '#1a0a1a';
+  ctx.fillRect(bx, by+22+bob, 8, 20);
+  ctx.fillRect(bx+boss.w-8, by+22+bob, 8, 20);
+  // claws
+  ctx.fillStyle = flash ? '#fff' : '#6a2020';
+  ctx.fillRect(bx, by+40+bob, 3, 6);
+  ctx.fillRect(bx+5, by+40+bob, 3, 6);
+  ctx.fillRect(bx+boss.w-8, by+40+bob, 3, 6);
+  ctx.fillRect(bx+boss.w-3, by+40+bob, 3, 6);
+}
+
+function drawBossBar() {
+  const bw = 400;
+  const bx = W/2 - bw/2;
+  const by = 30;
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.fillRect(bx-4, by-4, bw+8, 20);
+  ctx.strokeStyle = '#7a2020';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(bx-4, by-4, bw+8, 20);
+  ctx.fillStyle = '#1a0505';
+  ctx.fillRect(bx, by, bw, 12);
+  ctx.fillStyle = '#c01818';
+  ctx.fillRect(bx, by, bw * (boss.hp/boss.maxHp), 12);
+
+  ctx.fillStyle = '#d04040';
+  ctx.font = 'bold 12px Cinzel, serif';
+  ctx.textAlign = 'center';
+  ctx.fillText("GANON'S REMNANT", W/2, by-8);
+  ctx.textAlign = 'left';
+}
+
+function drawRupeeDrops() {
+  for (const r of rupeesDrops) {
+    const blink = r.life < 120 && Math.floor(r.life/6) % 2 === 0;
+    if (blink) continue;
+    ctx.fillStyle = '#40ff80';
+    ctx.beginPath();
+    ctx.moveTo(r.x, r.y-6);
+    ctx.lineTo(r.x+5, r.y);
+    ctx.lineTo(r.x, r.y+6);
+    ctx.lineTo(r.x-5, r.y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#80ffc0';
+    ctx.fillRect(r.x-1, r.y-3, 2, 2);
+  }
+}
+
+function drawParticles() {
+  for (const p of particles) {
+    ctx.globalAlpha = p.life / p.maxLife;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawFloatingTexts() {
+  for (const t of floatingTexts) {
+    ctx.globalAlpha = t.life / 40;
+    ctx.fillStyle = t.color;
+    ctx.font = 'bold 16px Cinzel, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(t.text, t.x, t.y);
+    ctx.textAlign = 'left';
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawVignette() {
+  const g = ctx.createRadialGradient(W/2, H/2, H/3, W/2, H/2, H);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(10, 20, 40, 0.35)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  // low health red pulse
+  if (player.health <= 2 && player.health > 0) {
+    const pulse = Math.sin(state.time*0.15)*0.15+0.2;
+    ctx.fillStyle = `rgba(200, 40, 40, ${pulse})`;
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
+// --- HUD ---
+function updateHUD() {
+  const heartsEl = document.getElementById('hearts');
+  heartsEl.innerHTML = '';
+  for (let i = 0; i < player.maxHealth; i++) {
+    const h = document.createElement('div');
+    h.className = 'heart' + (i >= player.health ? ' empty' : '');
+    heartsEl.appendChild(h);
+  }
+  document.getElementById('stamina').style.width = (player.stamina/player.maxStamina*100) + '%';
+  document.getElementById('rupees').textContent = state.rupees;
+  document.getElementById('kills').textContent = state.kills;
+}
+
+function showMessage(text) {
+  const m = document.getElementById('message');
+  m.textContent = text;
+  m.classList.add('show');
+  clearTimeout(showMessage._t);
+  showMessage._t = setTimeout(() => m.classList.remove('show'), 2500);
+}
+
+// --- LOOP ---
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function riseAgain() {
+  // If the player lost (didn't win), strip the tunic before reloading
+  if (!state.won) {
+    try {
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('botw_hasWon');
+    } catch(e) {}
+    try {
+      if (window.storage) window.storage.delete('hasWon');
+    } catch(e) {}
+  }
+  location.reload();
+}
+
+function startGame() {
+  document.getElementById('title-screen').style.display = 'none';
+  document.getElementById('hud').style.display = 'block';
+  document.getElementById('touch-controls').classList.add('active');
+  setupTouchControls();
+  genWorld();
+  spawnEnemies();
+  state.running = true;
+  updateHUD();
+  if (state.blueClothes) {
+    showMessage('The Champion returns. The wild trembles.');
+  } else {
+    showMessage('The wild hungers. Head north to end it.');
+  }
+  loop();
+}
+
+// --- TOUCH CONTROLS ---
+const touchState = {
+  up: false, down: false, left: false, right: false,
+  slice: false, dash: false, heal: false,
+};
+
+function setupTouchControls() {
+  // Dpad buttons
+  document.querySelectorAll('.dpad-btn').forEach(btn => {
+    const dir = btn.dataset.dir;
+    const press = (e) => {
+      e.preventDefault();
+      touchState[dir] = true;
+      btn.classList.add('active');
+    };
+    const release = (e) => {
+      e.preventDefault();
+      touchState[dir] = false;
+      btn.classList.remove('active');
+    };
+    btn.addEventListener('touchstart', press, { passive: false });
+    btn.addEventListener('touchend', release, { passive: false });
+    btn.addEventListener('touchcancel', release, { passive: false });
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('mouseup', release);
+    btn.addEventListener('mouseleave', release);
+  });
+
+  // Action buttons
+  document.querySelectorAll('.action-btn').forEach(btn => {
+    const action = btn.dataset.action;
+    const press = (e) => {
+      e.preventDefault();
+      touchState[action] = true;
+      btn.classList.add('active');
+    };
+    const release = (e) => {
+      e.preventDefault();
+      touchState[action] = false;
+      btn.classList.remove('active');
+    };
+    btn.addEventListener('touchstart', press, { passive: false });
+    btn.addEventListener('touchend', release, { passive: false });
+    btn.addEventListener('touchcancel', release, { passive: false });
+    btn.addEventListener('mousedown', press);
+    btn.addEventListener('mouseup', release);
+    btn.addEventListener('mouseleave', release);
+  });
+
+  // Prevent page scroll on the canvas area
+  document.getElementById('game-container').addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+}
+
+// Size canvas to viewport nicely
+function resize() {
+  const ratio = W / H;
+  const maxW = window.innerWidth - 20;
+  const maxH = window.innerHeight - 20;
+  let w = maxW, h = maxW / ratio;
+  if (h > maxH) { h = maxH; w = maxH * ratio; }
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Draw title screen preview
+ctx.fillStyle = '#88c070';
+ctx.fillRect(0, 0, W, H);
+</script>
+</body>
+</html>
