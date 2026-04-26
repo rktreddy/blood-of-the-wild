@@ -158,21 +158,24 @@
 
   .hearts {
     display: flex;
-    flex-wrap: wrap;
-    gap: 2px;
+    gap: 4px;
     margin-bottom: 8px;
-    max-width: 340px;
   }
 
   .heart {
-    width: 14px;
-    height: 14px;
-    background: radial-gradient(circle at 35% 30%, #ff8080, #d02020 60%, #6b0000);
+    --fill: 100%;
+    width: 22px;
+    height: 22px;
+    background:
+      linear-gradient(to right,
+        #d02020 0,
+        #d02020 var(--fill),
+        #2a1010 var(--fill),
+        #2a1010 100%);
     clip-path: polygon(50% 100%, 0 35%, 0 15%, 20% 0, 35% 0, 50% 15%, 65% 0, 80% 0, 100% 15%, 100% 35%);
+    box-shadow: inset 3px 3px 0 rgba(255, 140, 140, 0.35);
     filter: drop-shadow(0 1px 2px rgba(0,0,0,0.7));
   }
-
-  .heart.empty { background: #302020; opacity: 0.6; }
 
   .stamina-bar {
     width: 160px;
@@ -236,7 +239,7 @@
   @media (max-width: 600px) {
     .controls { font-size: 0.85rem; }
     #hud { top: 10px; left: 10px; }
-    .heart { width: 20px; height: 20px; }
+    .heart { width: 26px; height: 26px; }
     .stamina-bar { width: 120px; }
   }
 
@@ -546,8 +549,8 @@ const player = {
   w: 26, h: 26,
   speed: 2.6,
   dir: 'down',
-  health: 100,
-  maxHealth: 100,
+  health: 20,
+  maxHealth: 20,
   stamina: 100,
   maxStamina: 100,
   attacking: false,
@@ -1599,8 +1602,8 @@ function drawVignette() {
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 
-  // low health red pulse
-  if (player.health <= 2 && player.health > 0) {
+  // low health red pulse — fires at 1 heart or less
+  if (player.health <= 4 && player.health > 0) {
     const pulse = Math.sin(state.time*0.15)*0.15+0.2;
     ctx.fillStyle = `rgba(200, 40, 40, ${pulse})`;
     ctx.fillRect(0, 0, W, H);
@@ -1608,13 +1611,25 @@ function drawVignette() {
 }
 
 // --- HUD ---
-function updateHUD() {
+const HP_PER_HEART = 4;
+
+function buildHUD() {
   const heartsEl = document.getElementById('hearts');
   heartsEl.innerHTML = '';
-  for (let i = 0; i < player.maxHealth; i++) {
+  const numHearts = Math.ceil(player.maxHealth / HP_PER_HEART);
+  for (let i = 0; i < numHearts; i++) {
     const h = document.createElement('div');
-    h.className = 'heart' + (i >= player.health ? ' empty' : '');
+    h.className = 'heart';
     heartsEl.appendChild(h);
+  }
+}
+
+function updateHUD() {
+  const heartsEl = document.getElementById('hearts');
+  const hearts = heartsEl.children;
+  for (let i = 0; i < hearts.length; i++) {
+    const heartHP = Math.max(0, Math.min(HP_PER_HEART, player.health - i * HP_PER_HEART));
+    hearts[i].style.setProperty('--fill', (heartHP / HP_PER_HEART * 100) + '%');
   }
   document.getElementById('stamina').style.width = (player.stamina/player.maxStamina*100) + '%';
   document.getElementById('rupees').textContent = state.rupees;
@@ -1630,8 +1645,22 @@ function showMessage(text) {
 }
 
 // --- LOOP ---
-function loop() {
-  update();
+// Fixed-timestep accumulator so gameplay is identical at 60/120/144 Hz.
+// `update` runs at exactly 60 logic ticks/sec; `draw` runs once per RAF.
+const FIXED_DT = 1000 / 60;
+let lastTime = 0;
+let accumulator = 0;
+
+function loop(now) {
+  if (!lastTime) lastTime = now;
+  let frameTime = now - lastTime;
+  lastTime = now;
+  if (frameTime > 250) frameTime = 250; // clamp after tab-switch / breakpoints
+  accumulator += frameTime;
+  while (accumulator >= FIXED_DT) {
+    update();
+    accumulator -= FIXED_DT;
+  }
   draw();
   requestAnimationFrame(loop);
 }
@@ -1657,13 +1686,14 @@ function startGame() {
   genWorld();
   spawnEnemies();
   state.running = true;
+  buildHUD();
   updateHUD();
   if (state.blueClothes) {
     showMessage('The Champion returns. The wild trembles.');
   } else {
     showMessage('The wild hungers. Head north to end it.');
   }
-  loop();
+  requestAnimationFrame(loop);
 }
 
 // --- TOUCH CONTROLS ---
