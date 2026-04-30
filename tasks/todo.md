@@ -168,3 +168,27 @@ Scope: the 🟡 "Important" batch from the second review pass. Skipping 🔴 #1 
 ### Lessons
 - Don't trust an exploration subagent's bug list at face value — verify each finding against the code. The first review-pass agent reported "shrine bounds-unsafe" and "shrine multi-fire" — both were already guarded (`world[idx]` short-circuits to `undefined`; the heal is gated on `health < maxHealth`). Skipping verification would have led to writing fixes for non-bugs.
 - When proposing a fix, sanity-check the *trigger path* before claiming "real-world bug." Item 5's pitch claimed an active bug; while implementing, the only restart path turned out to be `location.reload()`, which made the bug moot. The change is still defensible as future-proofing, but the framing should have been honest from the start.
+
+---
+
+# Plan — PWA scaffolding (2026-04-29)
+
+Goal: make the GitHub Pages site installable on iOS/Android home screens, offline-capable, with a real icon. Step toward eventual Capacitor wrap.
+
+## Steps
+- [ ] `tools/generate-icons.html` — self-contained canvas script that renders the flame-sigil icon at 512/192/180 px and provides download buttons. User opens once, downloads 3 PNGs, drops them in repo root.
+- [ ] `manifest.json` — name, short_name, icons, `display: fullscreen`, `orientation: landscape`, theme/background colors matching game palette.
+- [ ] `sw.js` — minimal cache-first service worker; precaches `index.html`, `manifest.json`, `sw.js`, the 3 icon PNGs. Versioned cache key so updates evict cleanly.
+- [ ] `index.html` `<head>` — add `<link rel="manifest">`, `theme-color`, `apple-touch-icon`, `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`. ~5 lines.
+- [ ] `index.html` `<script>` — register service worker on load (guarded behind `'serviceWorker' in navigator`).
+- [ ] User step: open `tools/generate-icons.html` in any browser, click "Download all", move PNGs to repo root.
+- [ ] Commit + push.
+
+## Out of scope
+- Capacitor / native packaging (separate next step if user wants store presence)
+- Audio (would need user-gesture init for iOS WebView)
+- Landscape lock enforcement beyond manifest hint (manifest is advisory; iOS Safari ignores `orientation`)
+
+## Verification
+- Open `index.html` in a Chrome desktop tab → DevTools → Application → Manifest: no errors, all 3 icons resolve, no SW errors.
+- On a phone: Add to Home Screen → launch from icon → confirms fullscreen, custom icon, and offline (toggle airplane mode and relaunch).

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Wake of Embers — icon generator</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #0d1a2a; color: #f0e8d0; padding: 24px; }
+  h1 { margin: 0 0 8px; font-weight: 700; }
+  p { margin: 0 0 16px; opacity: 0.8; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; margin-bottom: 24px; }
+  .icon-card { background: #1a2a3a; padding: 16px; border-radius: 8px; }
+  .icon-card h3 { margin: 0 0 8px; font-size: 14px; opacity: 0.8; }
+  canvas { background: #000; display: block; image-rendering: pixelated; }
+  button { display: block; margin-top: 8px; padding: 8px 16px; background: #d4af37; color: #0d1a2a;
+           border: 0; border-radius: 4px; font-weight: 700; cursor: pointer; }
+  button:hover { background: #f5d76e; }
+  #all { padding: 12px 24px; font-size: 16px; }
+</style>
+</head>
+<body>
+
+<h1>Wake of Embers — icon generator</h1>
+<p>Downloads three PNGs. Move them into the repo root next to <code>index.html</code>.</p>
+
+<button id="all">Download all 3</button>
+
+<div class="row">
+  <div class="icon-card">
+    <h3>icon-512.png — 512×512 (PWA primary)</h3>
+    <canvas id="c512" width="512" height="512" style="width:256px;height:256px"></canvas>
+    <button data-src="c512" data-name="icon-512.png">Download</button>
+  </div>
+  <div class="icon-card">
+    <h3>icon-192.png — 192×192 (PWA fallback)</h3>
+    <canvas id="c192" width="192" height="192" style="width:192px;height:192px"></canvas>
+    <button data-src="c192" data-name="icon-192.png">Download</button>
+  </div>
+  <div class="icon-card">
+    <h3>apple-touch-icon.png — 180×180 (iOS home screen)</h3>
+    <canvas id="c180" width="180" height="180" style="width:180px;height:180px"></canvas>
+    <button data-src="c180" data-name="apple-touch-icon.png">Download</button>
+  </div>
+</div>
+
+<script>
+// Draw the flame sigil at any square size. Everything scales off `S = canvas.width`.
+function drawIcon(ctx, S) {
+  const cx = S/2, cy = S/2;
+
+  // background — dark teal stone disk with subtle vignette
+  const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, S*0.6);
+  bg.addColorStop(0, '#1d4458');
+  bg.addColorStop(0.6, '#0f2738');
+  bg.addColorStop(1, '#08151f');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, S, S);
+
+  // outer rim — gold ring
+  ctx.strokeStyle = '#d4af37';
+  ctx.lineWidth = Math.max(2, S * 0.025);
+  ctx.beginPath();
+  ctx.arc(cx, cy, S * 0.46, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // inner stone ring — subtle darker line for depth
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+  ctx.lineWidth = Math.max(1, S * 0.008);
+  ctx.beginPath();
+  ctx.arc(cx, cy, S * 0.42, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // flame glow — radial halo behind the flame
+  const halo = ctx.createRadialGradient(cx, cy + S*0.05, 0, cx, cy + S*0.05, S*0.4);
+  halo.addColorStop(0, 'rgba(255, 180, 80, 0.6)');
+  halo.addColorStop(0.5, 'rgba(220, 100, 40, 0.25)');
+  halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
+  ctx.fillStyle = halo;
+  ctx.fillRect(0, 0, S, S);
+
+  // outer flame — orange/red, teardrop shape pointing up
+  ctx.fillStyle = '#d04020';
+  ctx.beginPath();
+  flamePath(ctx, cx, cy + S*0.08, S*0.22, S*0.42);
+  ctx.fill();
+
+  // mid flame — warm orange
+  ctx.fillStyle = '#f08020';
+  ctx.beginPath();
+  flamePath(ctx, cx, cy + S*0.06, S*0.16, S*0.32);
+  ctx.fill();
+
+  // inner flame — gold
+  ctx.fillStyle = '#f5d76e';
+  ctx.beginPath();
+  flamePath(ctx, cx, cy + S*0.04, S*0.10, S*0.22);
+  ctx.fill();
+
+  // hot core — white spark
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  flamePath(ctx, cx, cy + S*0.02, S*0.045, S*0.10);
+  ctx.fill();
+
+  // 3 ember dots floating around the flame
+  ctx.fillStyle = '#ffcc44';
+  for (const [ex, ey, er] of [
+    [cx - S*0.30, cy - S*0.10, S*0.018],
+    [cx + S*0.28, cy - S*0.18, S*0.013],
+    [cx + S*0.20, cy + S*0.22, S*0.022],
+  ]) {
+    ctx.beginPath();
+    ctx.arc(ex, ey, er, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+// Teardrop / flame silhouette: wide bottom, tapered top with a slight curl.
+function flamePath(ctx, cx, baseY, halfWidth, height) {
+  const topY = baseY - height;
+  ctx.moveTo(cx, topY);
+  ctx.bezierCurveTo(
+    cx + halfWidth*0.6, topY + height*0.25,
+    cx + halfWidth, baseY - height*0.35,
+    cx + halfWidth*0.7, baseY
+  );
+  ctx.bezierCurveTo(
+    cx + halfWidth*0.4, baseY + height*0.05,
+    cx - halfWidth*0.4, baseY + height*0.05,
+    cx - halfWidth*0.7, baseY
+  );
+  ctx.bezierCurveTo(
+    cx - halfWidth, baseY - height*0.35,
+    cx - halfWidth*0.6, topY + height*0.25,
+    cx, topY
+  );
+}
+
+// Render all three sizes
+for (const id of ['c512', 'c192', 'c180']) {
+  const canvas = document.getElementById(id);
+  const ctx = canvas.getContext('2d');
+  drawIcon(ctx, canvas.width);
+}
+
+// Per-canvas download
+function downloadCanvas(canvasId, filename) {
+  const canvas = document.getElementById(canvasId);
+  canvas.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, 'image/png');
+}
+
+document.querySelectorAll('button[data-src]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    downloadCanvas(btn.dataset.src, btn.dataset.name);
+  });
+});
+
+document.getElementById('all').addEventListener('click', () => {
+  const items = [
+    ['c512', 'icon-512.png'],
+    ['c192', 'icon-192.png'],
+    ['c180', 'apple-touch-icon.png'],
+  ];
+  items.forEach(([id, name], i) => setTimeout(() => downloadCanvas(id, name), i * 200));
+});
+</script>
+</body>
+</html>
