@@ -15,6 +15,13 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  :root {
+    --sai-top: env(safe-area-inset-top, 0px);
+    --sai-right: env(safe-area-inset-right, 0px);
+    --sai-bottom: env(safe-area-inset-bottom, 0px);
+    --sai-left: env(safe-area-inset-left, 0px);
+  }
+
   html, body {
     height: 100%;
     background: #0d1a2a;
@@ -153,8 +160,8 @@
 
   #hud {
     position: absolute;
-    top: 20px;
-    left: 20px;
+    top: calc(20px + var(--sai-top));
+    left: calc(20px + var(--sai-left));
     z-index: 5;
     font-family: 'Cinzel', serif;
     color: #f5d76e;
@@ -244,7 +251,7 @@
 
   @media (max-width: 600px) {
     .controls { font-size: 0.85rem; }
-    #hud { top: 10px; left: 10px; }
+    #hud { top: calc(10px + var(--sai-top)); left: calc(10px + var(--sai-left)); }
     .heart { width: 26px; height: 26px; }
     .stamina-bar { width: 120px; }
   }
@@ -261,8 +268,8 @@
 
   #dpad {
     position: absolute;
-    bottom: 30px;
-    left: 30px;
+    bottom: calc(30px + var(--sai-bottom));
+    left: calc(30px + var(--sai-left));
     width: 150px;
     height: 150px;
     pointer-events: auto;
@@ -299,8 +306,8 @@
 
   #action-buttons {
     position: absolute;
-    bottom: 30px;
-    right: 30px;
+    bottom: calc(30px + var(--sai-bottom));
+    right: calc(30px + var(--sai-right));
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -1795,11 +1802,29 @@ function setupTouchControls() {
   document.getElementById('game-container').addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 }
 
-// Size canvas to viewport nicely
+// Size canvas to viewport, respecting iOS safe-area insets so the canvas
+// isn't clipped by the notch / home indicator under viewport-fit=cover.
+let safeArea = { top: 0, right: 0, bottom: 0, left: 0 };
+function measureSafeArea() {
+  const probe = document.createElement('div');
+  probe.style.cssText =
+    'position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;' +
+    'padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);';
+  document.body.appendChild(probe);
+  const cs = getComputedStyle(probe);
+  safeArea = {
+    top: parseFloat(cs.paddingTop) || 0,
+    right: parseFloat(cs.paddingRight) || 0,
+    bottom: parseFloat(cs.paddingBottom) || 0,
+    left: parseFloat(cs.paddingLeft) || 0,
+  };
+  document.body.removeChild(probe);
+}
 function resize() {
+  measureSafeArea();
   const ratio = W / H;
-  const maxW = window.innerWidth - 20;
-  const maxH = window.innerHeight - 20;
+  const maxW = window.innerWidth - safeArea.left - safeArea.right - 20;
+  const maxH = window.innerHeight - safeArea.top - safeArea.bottom - 20;
   let w = maxW, h = maxW / ratio;
   if (h > maxH) { h = maxH; w = maxH * ratio; }
   canvas.style.width = w + 'px';
@@ -1807,6 +1832,7 @@ function resize() {
 }
 resize();
 window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', resize);
 
 // Draw title screen preview
 ctx.fillStyle = '#88c070';
